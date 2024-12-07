@@ -4,45 +4,21 @@ import "./index.css";
 export default function ChatRoom() {
   const [messages, setMessages] = useState([
     {
-      id: 1,
-      sender: "User",
-      text: "What are Mohamed Salah's stats this season?",
-      timestamp: "2:30 PM",
-      isUser: true,
-    },
-    {
-      id: 2,
-      sender: "AI",
-      text: "Mohamed Salah has scored 14 goals and provided 8 assists in 20 Premier League appearances this season. He maintains a shot accuracy of 68% and has created 45 chances for his teammates.",
-      timestamp: "2:31 PM",
-      isUser: false,
-    },
-    {
-      id: 3,
-      sender: "User",
-      text: "What was the score in the last Manchester derby?",
-      timestamp: "2:32 PM",
-      isUser: true,
-    },
-    {
-      id: 4,
-      sender: "AI",
-      text: "The last Manchester derby was played on October 29, 2023, where Manchester City won 3-0 against Manchester United at Old Trafford. Erling Haaland scored twice and Phil Foden added another goal.",
-      timestamp: "2:33 PM",
-      isUser: false,
-    },
-    {
-      id: 5,
-      sender: "User",
-      text: "Who do you predict will win the Premier League this season?",
-      timestamp: "2:34 PM",
-      isUser: true,
-    },
-    {
-      id: 6,
-      sender: "AI",
-      text: "Based on current form and statistics, Manchester City and Liverpool are the strongest contenders. Arsenal also has a good chance given their defensive record and improved attacking performance. However, City's experience in title races gives them a slight edge.",
-      timestamp: "2:35 PM",
+      id: 0,
+      sender: "프림이",
+      text: `"프리미어리그 실시간 정보" 챗봇에 오신 것을 환영합니다!
+
+    다음과 같은 질문을 할 수 있습니다:
+
+    1. 특정 팀 또는 모든 팀의 순위, 승점, 골득실 등
+    2. 특정 팀의 최근 경기 결과
+    3. 특정 선수의 통계(득점, 도움 등)나 포지션
+    4. 리그 전체 기록 (예: 최다 득점자, 어시스트 순위)
+    5. 프리미어리그 득점왕, 우승팀 등 예측 `,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      }),
       isUser: false,
     },
   ]);
@@ -51,14 +27,57 @@ export default function ChatRoom() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
-  const handleSend = () => {
+  const fetchData = async () => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // 10분 타임아웃 설정
+    const timeout = setTimeout(() => controller.abort(), 600000);
+
+    try {
+      const response = await fetch("http://localhost:8000/initialize", {
+        method: "POST",
+        signal: signal,
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(data);
+      return data;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const sendToServer = async (message) => {
+    try {
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ question: message }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleSend = async () => {
     if (newMessage.trim()) {
-      setIsProcessing(true);
       setMessages([
         ...messages,
         {
           id: messages.length + 1,
-          sender: "User",
+          sender: "나",
           text: newMessage,
           timestamp: new Date().toLocaleTimeString([], {
             hour: "numeric",
@@ -68,11 +87,36 @@ export default function ChatRoom() {
         },
       ]);
       setNewMessage("");
+      setIsProcessing(true);
       setIsTyping(true);
-      setTimeout(() => {
-        setIsProcessing(false);
-        setIsTyping(false);
-      }, 2000);
+
+      const res = await sendToServer(newMessage);
+
+      setIsProcessing(false);
+      setIsTyping(false);
+      setMessages([
+        ...messages,
+        {
+          id: messages.length + 1,
+          sender: "나",
+          text: newMessage,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          isUser: true,
+        },
+        {
+          id: messages.length + 1,
+          sender: "프림이",
+          text: res.answer,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          isUser: false,
+        },
+      ]);
     }
   };
 
@@ -81,18 +125,44 @@ export default function ChatRoom() {
       <header className="bg-[#37003c]/95 backdrop-blur-lg text-white p-4 fixed top-0 left-0 right-0 z-10 border-b border-white/10 shadow-lg">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <img
-            src="/api/placeholder/48/48"
+            src="/assets/logo.svg"
             alt="Premier League Logo"
             className="w-12 h-12 object-contain"
           />
           <div>
             <h1 className="text-xl font-bold leading-loose">
-              Premier League Live Information
+              프리미어리그 실시간 AI 챗봇 : 프림이
             </h1>
             <p className="text-xs font-medium leading-tight opacity-80">
-              Your AI Assistant for Premier League Stats
+              프리미어리그의 실시간 정보를 제공하는 AI 챗봇과 대화해보세요!
             </p>
           </div>
+          <button
+            onClick={async () => {
+              const res = await fetchData();
+              console.log(res);
+              if (res.message === "Data initialized successfully") {
+                alert("데이터를 성공적으로 가져왔습니다.");
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg shadow-md hover:scale-105 hover:shadow-lg transition-transform duration-300 active:scale-95"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 10l9-6 9 6M4 10v10a1 1 0 001 1h14a1 1 0 001-1V10M12 22v-8m0 0v8m0-8l-3 3m3-3l3 3"
+              />
+            </svg>
+            실시간 데이터 가져오기
+          </button>
         </div>
       </header>
 
@@ -103,7 +173,7 @@ export default function ChatRoom() {
               key={message.id}
               className={`flex ${
                 message.isUser ? "justify-end" : "justify-start"
-              } animate-in slide-in-from-bottom-2 duration-300`}
+              } animate-in slide-in-from-bottom-2 duration-300 whitespace-pre-wrap`}
             >
               <div
                 className={`max-w-[80%] rounded-lg p-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] ${
@@ -127,7 +197,7 @@ export default function ChatRoom() {
           {isTyping && (
             <div className="flex justify-start animate-pulse">
               <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 shadow-lg">
-                <p className="text-sm">AI is typing...</p>
+                <p className="text-sm">프림이가 답변을 생각 중이에요!</p>
               </div>
             </div>
           )}
@@ -140,7 +210,7 @@ export default function ChatRoom() {
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Ask about Premier League statistics, matches, or predictions..."
+            placeholder="메시지를 입력하세요..."
             className="flex-1 rounded-lg border border-gray-200 p-3 text-[15px] font-medium focus:outline-none focus:border-[#37003c] focus:ring-2 focus:ring-[#37003c]/20"
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
           />
