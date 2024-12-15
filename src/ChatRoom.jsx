@@ -57,7 +57,7 @@ export default function ChatRoom() {
     const timeout = setTimeout(() => controller.abort(), 600000);
 
     try {
-      const response = await fetch("http://localhost:8000/initialize", {
+      const response = await fetch("http://147.46.19.69:58000/initialize", {
         method: "POST",
         signal: signal,
       });
@@ -78,7 +78,7 @@ export default function ChatRoom() {
 
   const sendToServer = async (message) => {
     try {
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await fetch("http://147.46.19.69:58000/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
