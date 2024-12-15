@@ -57,10 +57,13 @@ export default function ChatRoom() {
     const timeout = setTimeout(() => controller.abort(), 600000);
 
     try {
-      const response = await fetch("http://147.46.19.69:58000/initialize", {
-        method: "POST",
-        signal: signal,
-      });
+      const response = await fetch(
+        "https://premier-league-chatbot-fe.vercel.app/initialize",
+        {
+          method: "POST",
+          signal: signal,
+        }
+      );
       clearTimeout(timeout);
 
       if (!response.ok) {
@@ -78,13 +81,16 @@ export default function ChatRoom() {
 
   const sendToServer = async (message) => {
     try {
-      const response = await fetch("http://147.46.19.69:58000/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ question: message }),
-      });
+      const response = await fetch(
+        "https://premier-league-chatbot-fe.vercel.app/chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ question: message }),
+        }
+      );
 
       const data = await response.json();
       return data;
