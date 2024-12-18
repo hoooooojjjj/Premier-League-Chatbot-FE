@@ -4,41 +4,29 @@ import "./index.css";
 export default function ChatRoom() {
   const messagesEndRef = useRef(null);
 
-  // 초기 메시지 로컬 스토리지에서 로드
-  const loadMessagesFromLocalStorage = () => {
-    const storedMessages = localStorage.getItem("chatMessages");
-    return storedMessages
-      ? JSON.parse(storedMessages)
-      : [
-          {
-            id: 0,
-            sender: "프림이",
-            text: `"프리미어리그 실시간 정보" 챗봇에 오신 것을 환영합니다!
+  const [messages, setMessages] = useState([
+    {
+      id: 0,
+      sender: "프림이",
+      text: `"프리미어리그 실시간 정보" 챗봇에 오신 것을 환영합니다!
 
-      다음과 같은 질문을 할 수 있습니다:
+다음과 같은 질문을 할 수 있습니다:
 
-      1. 특정 팀 또는 모든 팀의 순위, 승점, 골득실 등
-      2. 특정 팀의 최근 경기 결과
-      3. 특정 선수의 통계(득점, 도움 등)나 포지션
-      4. 리그 전체 기록 (예: 최다 득점자, 어시스트 순위)
-      5. 프리미어리그 득점왕, 우승팀 등 예측 `,
-            timestamp: new Date().toLocaleTimeString([], {
-              hour: "numeric",
-              minute: "2-digit",
-            }),
-            isUser: false,
-          },
-        ];
-  };
-  const [messages, setMessages] = useState(loadMessagesFromLocalStorage());
+1. 특정 팀 또는 모든 팀의 순위, 승점, 골득실 등
+2. 특정 팀의 최근 경기 결과
+3. 특정 선수의 통계(득점, 도움 등)나 포지션
+4. 리그 전체 기록 (예: 최다 득점자, 어시스트 순위)
+5. 프리미어리그 득점왕, 우승팀 등 예측 `,
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+      isUser: false,
+    },
+  ]);
   const [newMessage, setNewMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-
-  // 메시지를 로컬 스토리지에 저장
-  const saveMessagesToLocalStorage = (messages) => {
-    localStorage.setItem("chatMessages", JSON.stringify(messages));
-  };
 
   // 자동 스크롤 함수
   const scrollToBottom = () => {
@@ -57,7 +45,7 @@ export default function ChatRoom() {
     const timeout = setTimeout(() => controller.abort(), 600000);
 
     try {
-      const response = await fetch("/initialize", {
+      const response = await fetch("https://test.gibeom.com/initialize", {
         method: "POST",
         signal: signal,
       });
@@ -78,7 +66,7 @@ export default function ChatRoom() {
 
   const sendToServer = async (message) => {
     try {
-      const response = await fetch("/chat", {
+      const response = await fetch("https://test.gibeom.com/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -110,7 +98,7 @@ export default function ChatRoom() {
       ];
 
       setMessages(newMessages);
-      saveMessagesToLocalStorage(newMessages);
+
       setNewMessage("");
       setIsProcessing(true);
       setIsTyping(true);
@@ -134,7 +122,6 @@ export default function ChatRoom() {
         ];
 
         setMessages(updatedMessages);
-        saveMessagesToLocalStorage(updatedMessages);
       } catch (error) {
         console.error("메시지 전송 실패:", error);
       } finally {
